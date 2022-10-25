@@ -1,130 +1,133 @@
-#include <functional>
+#include <math.h>
 #include <iostream>
-#include <list>
-#include <optional>
-#include <random>
 #include <vector>
+#include <functional>
+#include <random>
 
+std::random_device rd;
+std::mt19937 mt_generator(rd());
 
-std::mt19937 mt_generator((std::random_device()) ());
-using domain_t = std::vector<double>;
+std::vector<double> bruteforce(auto f, std::vector<double> domain, int iterations) {
+    using namespace std;
+    uniform_real_distribution<double> dist(domain.at(0), domain.at(1));
+    vector<double> min = f(domain);
 
-std::ostream &operator<<(std::ostream &o, domain_t &d) {
-    o << d[0] << " " << d[1];
-    return o;
+    double result = f(min);
+    for (int i = 0; i < iterations - 1; i++) {
+        vector<double> args = {dist(mt_generator), dist(mt_generator)};
+        double comp = f(args);
+        if (comp < result) {
+            result = comp;
+            min = args;
+        }
+    }
+    return min;
 }
 
-domain_t simulated_annealing(
-        const std::function<double(domain_t)> &f, domain_t start_point,
-        std::function<std::vector<domain_t>(domain_t)> get_close_points,
-        int max_iterations) {
-    domain_t best_p = start_point;
-    for (int iteration = 0; iteration < max_iterations; iteration++) {
-        auto close_points = get_close_points(best_p);
-        auto best_neighbour =
-                *std::min_element(close_points.begin(), close_points.end(),
-                                  [f](auto a, auto b) { return f(a) > f(b); });
-        if (f(best_neighbour) < f(best_p)) {
-            best_p = best_neighbour;
+std::vector<double> getNeighbour(std::vector<double> ar) {
+    double a = ar.at(0);
+    double b = ar.at(1);
+
+    std::uniform_real_distribution<double> step(-0.004, 0.004);
+
+    a += step(mt_generator);
+    b += step(mt_generator);
+
+    return {a, b};
+}
+
+std::vector<double> hill_climbing(auto f, std::vector<double> domain, int iterations) {
+    using namespace std;
+    uniform_real_distribution<double> dist(domain.at(0), domain.at(1));
+    vector<double> min = f(domain.at(0), domain.at(1));
+
+    double result = f(min);
+    for (int i = 0; i < iterations; i++) {
+        std::vector<double> args = getNeighbour(min);
+        if (args[0] > domain.at(1) or args.at(0) < domain.at(0) or args.at(1) > domain.at(1) or
+            args.at(1) < domain.at(0)) {
+            continue;
+        }
+        double comp = f(args);
+        if (comp < result) {
+            result = comp;
+            min = args;
+        }
+    }
+    return min;
+}
+
+std::vector<double> simulated_annealing(auto f, std::vector<double> domain, int iterations) {
+    using namespace std;
+    uniform_real_distribution<double> dist(domain.at(0), domain.at(1));
+
+    vector<double> min = f(domain.at(0), domain.at(1));
+    vector<double> args = f(dist(mt_generator), dist(mt_generator));
+
+    double result = f(min);
+    vector<vector<double>> visited = {};
+
+    for (int i = 0; i < iterations; i++) {
+        vector<double> neighbour = getNeighbour(min);
+        double comp = f(neighbour);
+
+        if (comp < result) {
+            result = comp;
+            min = neighbour;
         } else {
-            //"cała magia wyżarzania"
-        }
-    }
-    return best_p;
-}
-
-domain_t hill_climbing(
-        const std::function<double(domain_t)> &f, domain_t start_point,
-        std::function<std::vector<domain_t>(domain_t)> get_close_points,
-        int max_iterations) {
-    domain_t best_p = start_point;
-    for (int iteration = 0; iteration < max_iterations; iteration++) {
-        auto close_points = get_close_points(best_p);
-        auto best_neighbour =
-                *std::min_element(close_points.begin(), close_points.end(),
-                                  [f](auto a, auto b) { return f(a) > f(b); });
-        if (f(best_neighbour) < f(best_p)) best_p = best_neighbour;
-    }
-    return best_p;
-}
-
-domain_t tabu_method(
-        const std::function<double(domain_t)> &f, domain_t start_point,
-        std::function<std::vector<domain_t>(domain_t)> get_close_points,
-        int max_iterations) {
-    domain_t best_point = start_point;
-    domain_t current_point = start_point;
-    std::vector<domain_t> tabu_list = {current_point};
-    for (int iteration = 0; iteration < max_iterations; iteration++) {
-        std::cout << iteration << " " << current_point << " " << f(current_point)
-                  << std::endl;
-        std::vector<domain_t> close_points;
-        int tabu_idx = tabu_list.size() - 1;
-        do {
-            auto close_points_all = get_close_points(tabu_list.at(tabu_idx));
-            for (auto p: close_points_all) {
-                bool is_in_tabu = false;
-                for (auto p_tabu: tabu_list) {
-                    if (p == p_tabu) {
-                        is_in_tabu = true;
-                        break;
-                    }
-                }
-                if (!is_in_tabu) close_points.push_back(p);
+            std::uniform_real_distribution<double> rand(0, 1);
+            double temp = comp - result;
+            if (temp < 0) {
+                temp = temp * -1;
             }
-            tabu_idx--;
-        } while ((tabu_idx >= 0) && (close_points.size() == 0));
-        current_point =
-                *std::min_element(close_points.begin(), close_points.end(),
-                                  [f](auto a, auto b) { return f(a) < f(b); });
-        tabu_list.push_back(current_point);
-        if (f(best_point) > f(current_point)) best_point = current_point;
-    }
-    return best_point;
-}
-
-domain_t brute_force_method(
-        const std::function<double(domain_t)> &f,
-        const std::function<std::optional<domain_t>()> &domain_generator) {
-    auto best_p = domain_generator();
-    for (auto current_p = best_p; current_p.has_value();
-         current_p = domain_generator()) {
-        if (f(current_p.value()) < f(best_p.value())) {
-            best_p = current_p;
+            double Ti = 10000.0 / i;
+            if (rand(mt_generator) < exp(-1 * temp) / Ti) {
+                min = neighbour;
+            }
         }
     }
-    return best_p.value_or(domain_t());
+    return min;
 }
 
 int main() {
     using namespace std;
-    const double precision = 1.0 / 16;
-    auto rastrigin_f_v = [](domain_t x) {
-        const double A = 10.0;
-        double ret = A * x.size();
-        for (int i = 0; i < x.size(); i++) {
-            ret = ret + x[i] * x[i] - A * cos(2 * M_PI * x[i]);
-        }
-        return ret;
+
+    auto booth = [](vector<double> args) {
+        double x = args.at(0);
+        double y = args.at(1);
+        return pow(x + 2 * y - 7, 2) + pow(2 * x + y - 5, 2);
     };
-    auto get_random_point = []() -> domain_t {
-        uniform_real_distribution<double> distr(-10, 10);
-        return {distr(mt_generator), distr(mt_generator)};
+
+    auto matyas = [](vector<double> args) {
+        double x = args.at(0);
+        double y = args.at(1);
+        return 0.26 * (x * x + y * y) - 0.48 * x * y;
     };
-    auto get_close_points = [](domain_t p0) -> vector<domain_t> {
-        vector <domain_t> ret;
-        for (int i = 0; i < p0.size(); i++) {
-            domain_t v = p0;
-            v[i] += 1.0 / 128.0;
-            ret.push_back(v);
-            v = p0;
-            v[i] -= 1.0 / 128.0;
-            ret.push_back(v);
-        }
-        return ret;
+
+    auto himmelblau = [](vector<double> args) {
+        double x = args.at(0);
+        double y = args.at(1);
+        return pow(x * x + y - 11, 2) + pow(x + y * y - 7, 2);
     };
-    auto best0 =
-            tabu_method(rastrigin_f_v, get_random_point(), get_close_points, 10000);
-    cout << "# tabu x = " << best0[0] << " " << best0[1] << endl;
+
+    vector<double> domain = {-4.5, 4.5};
+    int iterations = 10000;
+
+    std::vector<double> boothResult = bruteforce(booth, domain, iterations);
+    std::vector<double> matyasResult = bruteforce(booth, domain, iterations);
+    std::vector<double> himmelblauResult = bruteforce(booth, domain, iterations);
+
+//    std::vector<double> boothResult = hill_climbing(booth, domain, iterations);
+//    std::vector<double> matyasResult = hill_climbing(booth, domain, iterations);
+//    std::vector<double> himmelblauResult = hill_climbing(booth, domain, iterations);
+
+//    std::vector<double> boothResult = simulated_annealing(booth, domain, iterations);
+//    std::vector<double> matyasResult = simulated_annealing(booth, domain, iterations);
+//    std::vector<double> himmelblauResult = simulated_annealing(booth, domain, iterations);
+
+    cout << "booth: " << boothResult.at(0) << " " << boothResult.at(1) << endl;
+    cout << "matyas: " << matyasResult.at(0) << " " << matyasResult.at(1) << endl;
+    cout << "himmelblau: " << himmelblauResult.at(0) << " " << himmelblauResult.at(1) << endl;
+
     return 0;
 }
