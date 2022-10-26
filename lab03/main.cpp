@@ -7,22 +7,22 @@
 std::random_device rd;
 std::mt19937 mt_generator(rd());
 
-std::vector<double> bruteforce(auto f, std::vector<double> domain, int iterations) {
-    using namespace std;
-    uniform_real_distribution<double> dist(domain.at(0), domain.at(1));
-    vector<double> min = f(domain);
-
-    double result = f(min);
-    for (int i = 0; i < iterations - 1; i++) {
-        vector<double> args = {dist(mt_generator), dist(mt_generator)};
-        double comp = f(args);
-        if (comp < result) {
-            result = comp;
-            min = args;
-        }
-    }
-    return min;
-}
+//std::vector<double> randomSampling(auto f, std::vector<double> domain, int iterations) {
+//    using namespace std;
+//    uniform_real_distribution<double> dist(domain.at(0), domain.at(1));
+//    vector<double> min = f(domain);
+//
+//    double result = f(min);
+//    for (int i = 0; i < iterations - 1; i++) {
+//        vector<double> args = {dist(mt_generator), dist(mt_generator)};
+//        double comp = f(args);
+//        if (comp < result) {
+//            result = comp;
+//            min = args;
+//        }
+//    }
+//    return min;
+//}
 
 std::vector<double> getNeighbour(std::vector<double> ar) {
     double a = ar.at(0);
@@ -36,16 +36,16 @@ std::vector<double> getNeighbour(std::vector<double> ar) {
     return {a, b};
 }
 
-std::vector<double> hill_climbing(auto f, std::vector<double> domain, int iterations) {
+std::vector<double> hill_climbing(std::function<double(std::vector<double>)>f, std::vector<double> point, int iterations) {
     using namespace std;
-    uniform_real_distribution<double> dist(domain.at(0), domain.at(1));
-    vector<double> min = f(domain.at(0), domain.at(1));
+    uniform_real_distribution<double> dist(point.at(0), point.at(1));
+    vector<double> min = point;
 
     double result = f(min);
     for (int i = 0; i < iterations; i++) {
         std::vector<double> args = getNeighbour(min);
-        if (args[0] > domain.at(1) or args.at(0) < domain.at(0) or args.at(1) > domain.at(1) or
-            args.at(1) < domain.at(0)) {
+        if (args[0] > point.at(1) or args.at(0) < point.at(0) or args.at(1) > point.at(1) or
+            args.at(1) < point.at(0)) {
             continue;
         }
         double comp = f(args);
@@ -57,12 +57,12 @@ std::vector<double> hill_climbing(auto f, std::vector<double> domain, int iterat
     return min;
 }
 
-std::vector<double> simulated_annealing(auto f, std::vector<double> domain, int iterations) {
+std::vector<double> simulated_annealing(auto f, std::vector<double> point, int iterations) {
     using namespace std;
-    uniform_real_distribution<double> dist(domain.at(0), domain.at(1));
+    uniform_real_distribution<double> dist(point.at(0), point.at(1));
 
-    vector<double> min = f(domain.at(0), domain.at(1));
-    vector<double> args = f(dist(mt_generator), dist(mt_generator));
+    vector<double> min = point;
+    vector<double> args = (mt_generator), (mt_generator);
 
     double result = f(min);
     vector<vector<double>> visited = {};
@@ -113,17 +113,17 @@ int main() {
     vector<double> domain = {-4.5, 4.5};
     int iterations = 10000;
 
-    std::vector<double> boothResult = bruteforce(booth, domain, iterations);
-    std::vector<double> matyasResult = bruteforce(booth, domain, iterations);
-    std::vector<double> himmelblauResult = bruteforce(booth, domain, iterations);
+//    std::vector<double> boothResult = randomSampling(booth, domain, iterations);
+//    std::vector<double> matyasResult = randomSampling(booth, domain, iterations);
+//    std::vector<double> himmelblauResult = randomSampling(booth, domain, iterations);
 
 //    std::vector<double> boothResult = hill_climbing(booth, domain, iterations);
 //    std::vector<double> matyasResult = hill_climbing(booth, domain, iterations);
 //    std::vector<double> himmelblauResult = hill_climbing(booth, domain, iterations);
 
-//    std::vector<double> boothResult = simulated_annealing(booth, domain, iterations);
-//    std::vector<double> matyasResult = simulated_annealing(booth, domain, iterations);
-//    std::vector<double> himmelblauResult = simulated_annealing(booth, domain, iterations);
+    std::vector<double> boothResult = simulated_annealing(booth, domain, iterations);
+    std::vector<double> matyasResult = simulated_annealing(booth, domain, iterations);
+    std::vector<double> himmelblauResult = simulated_annealing(booth, domain, iterations);
 
     cout << "booth: " << boothResult.at(0) << " " << boothResult.at(1) << endl;
     cout << "matyas: " << matyasResult.at(0) << " " << matyasResult.at(1) << endl;
