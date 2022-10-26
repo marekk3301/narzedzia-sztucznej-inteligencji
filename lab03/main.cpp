@@ -7,9 +7,9 @@
 std::random_device rd;
 std::mt19937 mt_generator(rd());
 
-std::vector<double> full_review(std::function<double(std::vector<double>)> f, std::vector<double>point, int iterations){
+std::vector<double> full_review(std::function<double(std::vector<double>)> f, std::vector<double>point, std::vector<double>domain, int iterations){
     using namespace std;
-    uniform_real_distribution<double> dist(point.at(0), point.at(1));
+    uniform_real_distribution<double> dist(domain.at(0), domain.at(1));
     vector<double> min = {dist(mt_generator), dist(mt_generator)};
     double result = f(min);
     for (int i = 0; i < iterations; i++){
@@ -35,9 +35,9 @@ std::vector<double> get_neighbour(std::vector<double> ar) {
     return {a, b};
 }
 
-std::vector<double> hill_climbing(std::function<double(std::vector<double>)> f, std::vector<double> point, int iterations) {
+std::vector<double> hill_climbing(std::function<double(std::vector<double>)> f, std::vector<double> point, std::vector<double>domain, int iterations) {
     using namespace std;
-    uniform_real_distribution<double> dist(point.at(0), point.at(1));
+    uniform_real_distribution<double> dist(domain.at(0), domain.at(1));
     vector<double> min = point;
 
     double result = f(min);
@@ -56,9 +56,9 @@ std::vector<double> hill_climbing(std::function<double(std::vector<double>)> f, 
     return min;
 }
 
-std::vector<double> simulated_annealing(std::function<double(std::vector<double>)> f, std::vector<double> point, int iterations) {
+std::vector<double> simulated_annealing(std::function<double(std::vector<double>)> f, std::vector<double> point, std::vector<double>domain, int iterations) {
     using namespace std;
-    uniform_real_distribution<double> dist(point.at(0), point.at(1));
+    uniform_real_distribution<double> dist(domain.at(0), domain.at(1));
 
     vector<double> min = point;
     vector<double> args = {dist(mt_generator), dist(mt_generator)};
@@ -109,30 +109,31 @@ int main() {
         return pow(x * x + y - 11, 2) + pow(x + y * y - 7, 2);
     };
 
-    vector<double> point = {-4.5, 4.5};
+    vector<double> domain = {-4.5, 4.5};
+    vector<double> point = {-1, 1};
     int iterations = 10000;
 
-    std::vector<double> boothResult = full_review(booth, point, iterations);
-    std::vector<double> matyasResult = full_review(matyas, point, iterations);
-    std::vector<double> himmelblauResult = full_review(himmelblau, point, iterations);
+    std::vector<double> boothResult = full_review(booth, point, domain, iterations);
+    std::vector<double> matyasResult = full_review(matyas, point, domain, iterations);
+    std::vector<double> himmelblauResult = full_review(himmelblau, domain, point, iterations);
 
     cout << endl << "Full review:" << endl;
     cout << "booth: " << boothResult.at(0) << " " << boothResult.at(1) << endl;
     cout << "matyas: " << matyasResult.at(0) << " " << matyasResult.at(1) << endl;
     cout << "himmelblau: " << himmelblauResult.at(0) << " " << himmelblauResult.at(1) << endl;
 
-    boothResult = simulated_annealing(booth, point, iterations);
-    matyasResult = simulated_annealing(matyas, point, iterations);
-    himmelblauResult = simulated_annealing(himmelblau, point, iterations);
+    boothResult = simulated_annealing(booth, point, domain, iterations);
+    matyasResult = simulated_annealing(matyas, point, domain, iterations);
+    himmelblauResult = simulated_annealing(himmelblau, domain, point, iterations);
 
     cout << endl << "Simmulated annealing" << endl;
     cout << "booth: " << boothResult.at(0) << " " << boothResult.at(1) << endl;
     cout << "matyas: " << matyasResult.at(0) << " " << matyasResult.at(1) << endl;
     cout << "himmelblau: " << himmelblauResult.at(0) << " " << himmelblauResult.at(1) << endl;
 
-    boothResult = hill_climbing(booth, point, iterations);
-    matyasResult = hill_climbing(matyas, point, iterations);
-    himmelblauResult = hill_climbing(himmelblau, point, iterations);
+    boothResult = hill_climbing(booth, point, domain, iterations);
+    matyasResult = hill_climbing(matyas, point, domain, iterations);
+    himmelblauResult = hill_climbing(himmelblau, domain, point, iterations);
 
     cout << endl << "Hill Climbing:" << endl;
     cout << "booth: " << boothResult.at(0) << " " << boothResult.at(1) << endl;
