@@ -3,12 +3,6 @@
 #include <functional>
 #include <random>
 
-//Przygotuj funkcję dekodującą genotyp w fenotyp. Niech genotyp będzie ciągiem bitów (vector<int> albo vector<bool>) długości
-// (100+(twój numer indeksu modulo 10)*2 ). Rozwiązanie zadania to będzie wektor liczb zmiennoprzecinkowych. W zależności od wybranego
-// zadania będzie to X,Y, albo X0, X1, ... Xn.
-
-//
-
 std::random_device rd;
 std::mt19937 mt_generator(rd());
 
@@ -59,10 +53,10 @@ auto genetic_algorithm = [](
     return population;
 };
 
-auto booth = [](std::vector<double> args) {
+auto himmelblau = [](std::vector<double> args) {
     double x = args.at(0);
     double y = args.at(1);
-    return pow(x + 2 * y - 7, 2) + pow(2 * x + y - 5, 2);
+    return pow(x * x + y - 11, 2) + pow(x + y * y - 7, 2);
 };
 
 double findMax(auto f, std::vector<double> domain, int iterations) {
@@ -78,31 +72,34 @@ double findMax(auto f, std::vector<double> domain, int iterations) {
             max = comp;
         }
     }
+
     return max;
 }
 
 std::vector<double> decode(chromosome_t chromosome) {
     using namespace std;
 
+    int genotype_len = chromosome.size();
+
     double x = 0.0;
     double y = 0.0;
 
-    int genotype_len = chromosome.size();
-
-    for (int i = 0; i < genotype_len / 2; i++) {
-        x *= 2;
-        x += chromosome[i];
+    for (int i = 1; i < genotype_len / 2; i++) {
+        x += chromosome[i] * (1 / pow(2, i));
     }
 
-    for (int i = genotype_len / 2; i < genotype_len; i++) {
-        y *= 2;
-        y += chromosome[i];
+    for (int i = genotype_len / 2 + 1; i < genotype_len; i++) {
+        y += chromosome[i] * (1 / pow(2, i - (genotype_len / 2)));
     }
 
-    x = x / pow(2.0, (chromosome.size() / 2 - 4)) - 8;
-    y = y / pow(2.0, (chromosome.size() / 2 - 4)) - 8;
+    if (chromosome[0] == 1) {
+        x *= -1.0;
+    } if (chromosome[genotype_len / 2] == 1) {
+        y *= -1.0;
+    }
 
-    vector<double> result = {x, y};
+    vector<double> result = {10 * x, 10 * y};
+
     return result;
 }
 
@@ -110,10 +107,9 @@ std::vector<double> fitness_function(population_t pop){
     using namespace std;
     vector<double> fitnesses;
 
-//        cos = pow(x * x + y - 11, 2) + pow(x + y * y - 7, 2);
-
     for (chromosome_t chromosome : pop) {
-        auto fitness = booth(decode(chromosome));
+        auto fitness = 1000 - himmelblau(decode(chromosome));
+        if (fitness < 0) { fitness = 0; }
         fitnesses.push_back(fitness);
     }
 
@@ -150,21 +146,28 @@ int main() {
                                     selection_empty, 1.0,
                                     crossover_empty,
                                     0.01, mutation_empty);
-    for (chromosome_t chromosome: result) {
-        cout << "[";
-        for (int p: chromosome) {
-            cout << p;
-        }
-        cout << "] " << endl;
-    }
+//    for (chromosome_t chromosome: result) {
+//        cout << "[";
+//        for (int p: chromosome) {
+//            cout << p;
+//        }
+//        cout << "] " << endl;
+//    }
 
 //    for (chromosome_t chromosome: result) {
 //        cout << "[";
 //        for (double p: decode(chromosome)) {
-//            cout << p << " ";
+//            cout << p;
 //        }
 //        cout << "] " << endl;
 //    }
+
+    vector<double> fitnesses = fitness_function(population);
+    for (double fitness: fitnesses) {
+        cout << "[";
+            cout << fitness;
+        cout << "] " << endl;
+    }
     cout << endl;
     return 0;
 }
