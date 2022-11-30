@@ -2,7 +2,6 @@
 #include <vector>
 #include <functional>
 #include <random>
-#include <numeric>
 
 std::random_device rd;
 std::mt19937 mt_generator(rd());
@@ -14,26 +13,37 @@ using population_t = std::vector<chromosome_t>;
 // 100 + ('2262')7*2
 int genotype_len = 100 + (22627 % 10) * 2; // 114
 
-std::vector<double> max_fitness;
-std::vector<double> min_fitness;
-std::vector<std::vector<double>> allFitnesses;
-std::vector<double> avg_fitness;
-
-void calculate_max_fitness(std::vector<double> newFitness) {
-    if (newFitness > max_fitness) {
-        max_fitness = newFitness;
+double calculate_min_fitness(std::vector<double> fitnesses) {
+    double min = fitnesses.at(0);
+    for (double fitness : fitnesses) {
+        if (fitness < min) {
+            min = fitness;
+        }
     }
+
+    return min;
 }
 
-void calculate_min_fitness(std::vector<double> newFitness) {
-    if (newFitness < min_fitness) {
-        min_fitness = newFitness;
+double calculate_max_fitness(std::vector<double> fitnesses) {
+    double max = fitnesses.at(0);
+    for (double fitness : fitnesses) {
+        if (fitness > max) {
+            max = fitness;
+        }
     }
+
+    return max;
 }
 
-void calculate_avg_fitness(std::vector<double> newFitness) {
-    allFitnesses.push_back(newFitness);
-    std::accumulate(allFitnesses.begin(), allFitnesses.end(), 0.0) / allFitnesses.size();
+double calculate_avg_fitness(std::vector<double> fitnesses) {
+    double avg = 0;
+
+    for (double fitness : fitnesses) {
+        avg += fitness;
+    }
+    avg /= fitnesses.size();
+
+    return avg;
 }
 
 auto generate_population = [](int population_size, int genotype_len) {
@@ -165,28 +175,28 @@ std::vector<int> selection(std::vector<double> fitnesses) {
 }
 
 std::vector<chromosome_t > crossover(std::vector<chromosome_t > parents) {
-//    std::uniform_real_distribution<double> S(0,genotype_len);
-//    int rand = S(mt_generator);
-//    for(int i = rand; i < genotype_len; i++) {
-//        int index = parents.at(0).at(i);
-//        parents.at(0).at(i) = parents.at(1).at(i);
-//        parents.at(1).at(i) = index;
-//    }
+    std::uniform_real_distribution<double> S(0,genotype_len);
+    int rand = S(mt_generator);
+    for(int i = rand; i < genotype_len; i++) {
+        int index = parents.at(0).at(i);
+        parents.at(0).at(i) = parents.at(1).at(i);
+        parents.at(1).at(i) = index;
+    }
 
     return parents;
 }
 
 chromosome_t mutation(chromosome_t parents, double p_mutation) {
-//    std::uniform_real_distribution<> randNum(0,1);
-//    std::uniform_real_distribution<> randQuan(0,8);
-//    std::uniform_real_distribution<> randPoint(0,genotype_len);
-//    int Quantity = randQuan(mt_generator);
-//        for (int i = Quantity ; i > 0 ; i--) {
-//            if (randNum(mt_generator) < p_mutation) {
-//                int temp = randPoint(mt_generator);
-//                parents.at(temp) = randNum(mt_generator);
-//            }
-//        }
+    std::uniform_real_distribution<> randNum(0,1);
+    std::uniform_real_distribution<> randQuan(0,8);
+    std::uniform_real_distribution<> randPoint(0,genotype_len);
+    int Quantity = randQuan(mt_generator);
+        for (int i = Quantity ; i > 0 ; i--) {
+            if (randNum(mt_generator) < p_mutation) {
+                int temp = randPoint(mt_generator);
+                parents.at(temp) = randNum(mt_generator);
+            }
+        }
 
     return parents;
 }
@@ -237,18 +247,18 @@ int main() {
     try {
         auto result = genetic_algorithm(population,
                                         fitness_function,
-                                        [&standard_deviation, &iterations, &max_iterations](auto population, auto population_fit) {
+                                        [&standard_deviation, &iterations, &max_iterations, &sd_threshold](auto population, auto population_fit) {
                                             if (standard_deviation) {
                                                 cout << "Fitness standard deviation: " << calculateSD(population_fit) << endl;
-//                                                if (calculateSD(population_fit) < sd_threshold) {
-//                                                    return true;
-//                                                } else {return false;}
+                                                if (calculateSD(population_fit) < sd_threshold) {
+                                                    return true;
+                                                } else {return false;}
                                             } //else {
-                                                if (iterations < max_iterations) {
+                                            if (iterations < max_iterations) {
 
-                                                    return false;
-                                                }
-                                           // }
+                                                return false;
+                                            }
+                                            // }
 
                                             return true;
                                         },
