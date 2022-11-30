@@ -191,12 +191,12 @@ chromosome_t mutation(chromosome_t parents, double p_mutation) {
     std::uniform_real_distribution<> randQuan(0,8);
     std::uniform_real_distribution<> randPoint(0,genotype_len);
     int Quantity = randQuan(mt_generator);
-        for (int i = Quantity ; i > 0 ; i--) {
-            if (randNum(mt_generator) < p_mutation) {
-                int temp = randPoint(mt_generator);
-                parents.at(temp) = randNum(mt_generator);
-            }
+    for (int i = Quantity ; i > 0 ; i--) {
+        if (randNum(mt_generator) < p_mutation) {
+            int temp = randPoint(mt_generator);
+            parents.at(temp) = randNum(mt_generator);
         }
+    }
 
     return parents;
 }
@@ -222,7 +222,7 @@ float calculateSD(std::vector<double> population_fit) {
 int main() {
     using namespace std;
 
-    bool standard_deviation = true;
+    bool standard_deviation = false;
     int iterations = 0;
     double sd_threshold = 100;
 
@@ -253,12 +253,12 @@ int main() {
                                                 if (calculateSD(population_fit) < sd_threshold) {
                                                     return true;
                                                 } else {return false;}
-                                            } //else {
-                                            if (iterations < max_iterations) {
-
-                                                return false;
+                                            } else {
+                                                if (iterations < max_iterations) {
+                                                    iterations++;
+                                                    return false;
+                                                }
                                             }
-                                            // }
 
                                             return true;
                                         },
